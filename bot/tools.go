@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"sort"
@@ -79,6 +80,16 @@ func parseMusicID(text string) int {
 	messageText := replacer.Replace(text)
 	musicUrl := regUrl.FindStringSubmatch(messageText)
 	if len(musicUrl) != 0 {
+		if strings.Contains(musicUrl[0], "163cn.tv") {
+			client := http.Client{
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
+			resp, _ := client.Get(musicUrl[0])
+			defer resp.Body.Close()
+			musicUrl[0] = resp.Header.Get("Location")
+		}
 		if strings.Contains(musicUrl[0], "song") {
 			ur, _ := url.Parse(musicUrl[0])
 			id := ur.Query().Get("id")

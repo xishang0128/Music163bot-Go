@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/XiaoMengXinX/Music163Api-Go/utils"
-	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -184,7 +184,7 @@ func Start(conf map[string]string) (actionCode int) {
 						return 2
 					}
 				}
-			} else if strings.Contains(update.Message.Text, "music.163.com") {
+			} else if strings.Contains(update.Message.Text, "music.163.com") || strings.Contains(update.Message.Text, "163cn.tv") {
 				go func() {
 					id := parseMusicID(updateMsg.Text)
 					if id != 0 {
