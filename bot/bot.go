@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var WhitelistIDs []string
+
 // Start bot entry
 func Start(conf map[string]string) (actionCode int) {
 	config = conf
@@ -36,6 +38,9 @@ func Start(conf map[string]string) (actionCode int) {
 				botAdmin = append(botAdmin, id)
 			}
 		}
+	}
+	if config["Whitelist"] != "" {
+		WhitelistIDs = strings.Split(config["Whitelist"], ",")
 	}
 
 	// 初始化数据库
@@ -98,109 +103,119 @@ func Start(conf map[string]string) (actionCode int) {
 		switch {
 		case update.Message != nil:
 			updateMsg := *update.Message
-			if atStr := strings.ReplaceAll(update.Message.CommandWithAt(), update.Message.Command(), ""); update.Message.Command() != "" && (atStr == "" || atStr == "@"+botName) {
-				switch update.Message.Command() {
-				case "start":
-					if !updateMsg.Chat.IsPrivate() {
-						return
-					}
-					go func() {
-						musicID, _ := strconv.Atoi(updateMsg.CommandArguments())
-						if musicID == 0 {
+			ChatID := strconv.FormatInt(updateMsg.Chat.ID, 10)
+			found := false
+			for _, id := range WhitelistIDs {
+				if ChatID == id {
+					found = true
+					break
+				}
+			}
+			if found || len(WhitelistIDs) == 0 {
+				if atStr := strings.ReplaceAll(update.Message.CommandWithAt(), update.Message.Command(), ""); update.Message.Command() != "" && (atStr == "" || atStr == "@"+botName) {
+					switch update.Message.Command() {
+					case "start":
+						if !updateMsg.Chat.IsPrivate() {
 							return
 						}
-						err := processMusic(musicID, updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				case "music", "netease":
-					go func() {
-						err := processAnyMusic(updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				case "program":
-					go func() {
-						id, _ := strconv.Atoi(updateMsg.CommandArguments())
-						musicID := getProgramRealID(id)
-						if musicID != 0 {
+						go func() {
+							musicID, _ := strconv.Atoi(updateMsg.CommandArguments())
+							if musicID == 0 {
+								return
+							}
 							err := processMusic(musicID, updateMsg, bot)
 							if err != nil {
 								logrus.Errorln(err)
 							}
-						}
-					}()
-				case "lyric":
-					go func() {
-						err := processLyric(updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				case "search":
-					go func() {
-						err := processSearch(updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				case "recognize":
-					go func() {
-						err := recognizeMusic(updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				case "about":
-					go func() {
-						err := printAbout(updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				case "status":
-					go func() {
-						err := processStatus(updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
-						}
-					}()
-				}
-				if in(fmt.Sprintf("%d", update.Message.From.ID), botAdminStr) {
-					switch update.Message.Command() {
-					case "rmcache":
+						}()
+					case "music", "netease":
 						go func() {
-							err := processRmCache(updateMsg, bot)
+							err := processAnyMusic(updateMsg, bot)
 							if err != nil {
 								logrus.Errorln(err)
 							}
 						}()
-					case "reload":
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, reloading)
-						msg.ReplyToMessageID = update.Message.MessageID
-						_, _ = bot.Send(msg)
-						return 2
+					case "program":
+						go func() {
+							id, _ := strconv.Atoi(updateMsg.CommandArguments())
+							musicID := getProgramRealID(id)
+							if musicID != 0 {
+								err := processMusic(musicID, updateMsg, bot)
+								if err != nil {
+									logrus.Errorln(err)
+								}
+							}
+						}()
+					case "lyric":
+						go func() {
+							err := processLyric(updateMsg, bot)
+							if err != nil {
+								logrus.Errorln(err)
+							}
+						}()
+					case "search":
+						go func() {
+							err := processSearch(updateMsg, bot)
+							if err != nil {
+								logrus.Errorln(err)
+							}
+						}()
+					case "recognize":
+						go func() {
+							err := recognizeMusic(updateMsg, bot)
+							if err != nil {
+								logrus.Errorln(err)
+							}
+						}()
+					case "about":
+						go func() {
+							err := printAbout(updateMsg, bot)
+							if err != nil {
+								logrus.Errorln(err)
+							}
+						}()
+					case "status":
+						go func() {
+							err := processStatus(updateMsg, bot)
+							if err != nil {
+								logrus.Errorln(err)
+							}
+						}()
 					}
-				}
-			} else if strings.Contains(update.Message.Text, "music.163.com") || strings.Contains(update.Message.Text, "163cn.tv") {
-				go func() {
-					id := parseMusicID(updateMsg.Text)
-					if id != 0 {
-						err := processMusic(id, updateMsg, bot)
-						if err != nil {
-							logrus.Errorln(err)
+					if in(fmt.Sprintf("%d", update.Message.From.ID), botAdminStr) {
+						switch update.Message.Command() {
+						case "rmcache":
+							go func() {
+								err := processRmCache(updateMsg, bot)
+								if err != nil {
+									logrus.Errorln(err)
+								}
+							}()
+						case "reload":
+							msg := tgbotapi.NewMessage(update.Message.Chat.ID, reloading)
+							msg.ReplyToMessageID = update.Message.MessageID
+							_, _ = bot.Send(msg)
+							return 2
 						}
-					} else if id = parseProgramID(updateMsg.Text); id != 0 {
-						if id = getProgramRealID(id); id != 0 {
+					}
+				} else if strings.Contains(update.Message.Text, "music.163.com") || strings.Contains(update.Message.Text, "163cn.tv") {
+					go func() {
+						id := parseMusicID(updateMsg.Text)
+						if id != 0 {
 							err := processMusic(id, updateMsg, bot)
 							if err != nil {
 								logrus.Errorln(err)
 							}
+						} else if id = parseProgramID(updateMsg.Text); id != 0 {
+							if id = getProgramRealID(id); id != 0 {
+								err := processMusic(id, updateMsg, bot)
+								if err != nil {
+									logrus.Errorln(err)
+								}
+							}
 						}
-					}
-				}()
+					}()
+				}
 			}
 		case update.CallbackQuery != nil:
 			updateQuery := *update.CallbackQuery
