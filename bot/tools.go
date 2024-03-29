@@ -150,21 +150,18 @@ func getProgramRealID(programID int) int {
 }
 
 // 读取白名单列表
-func readWhitelist() ([]int64, error) {
+func readWhitelist() []int64 {
 	data, _ := os.ReadFile("Whitelist")
 	lines := strings.Split(string(data), "\n")
 	var whitelist []int64
 	for _, line := range lines {
-		if line == "" {
-			continue
-		}
 		num, err := strconv.ParseInt(line, 10, 64)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		whitelist = append(whitelist, num)
 	}
-	return whitelist, nil
+	return whitelist
 }
 
 // 更新白名单列表

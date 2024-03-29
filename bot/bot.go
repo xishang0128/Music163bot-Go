@@ -39,7 +39,7 @@ func Start(conf map[string]string) (actionCode int) {
 			}
 		}
 	}
-	WhitelistIDs, _ = readWhitelist()
+	WhitelistIDs = readWhitelist()
 
 	// 初始化数据库
 	err := initDB(config)
@@ -116,6 +116,7 @@ func Start(conf map[string]string) (actionCode int) {
 								list := (strings.Split(update.Message.Text, " "))
 								NewWhitelist := list[1:]
 								AddWhitelist(updateMsg, NewWhitelist)
+								WhitelistIDs = readWhitelist()
 							}
 						}
 					case "start":
