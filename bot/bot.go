@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var WhitelistIDs []string
+var WhitelistIDs []int64
 
 // Start bot entry
 func Start(conf map[string]string) (actionCode int) {
@@ -39,9 +39,7 @@ func Start(conf map[string]string) (actionCode int) {
 			}
 		}
 	}
-	if config["Whitelist"] != "" {
-		WhitelistIDs = strings.Split(config["Whitelist"], ",")
-	}
+	WhitelistIDs, _ = readWhitelist()
 
 	// 初始化数据库
 	err := initDB(config)
@@ -103,17 +101,23 @@ func Start(conf map[string]string) (actionCode int) {
 		switch {
 		case update.Message != nil:
 			updateMsg := *update.Message
-			ChatID := strconv.FormatInt(updateMsg.Chat.ID, 10)
-			found := false
+			isWhitelist := false
 			for _, id := range WhitelistIDs {
-				if ChatID == id {
-					found = true
-					break
+				if updateMsg.Chat.ID == id || updateMsg.From.ID == id {
+					isWhitelist = true
 				}
 			}
-			if found || len(WhitelistIDs) == 0 {
+			if config["WhitelistMode"] != "true" || isWhitelist {
 				if atStr := strings.ReplaceAll(update.Message.CommandWithAt(), update.Message.Command(), ""); update.Message.Command() != "" && (atStr == "" || atStr == "@"+botName) {
 					switch update.Message.Command() {
+					case "addwhite":
+						for _, id := range botAdmin {
+							if updateMsg.From.ID == int64(id) {
+								list := (strings.Split(update.Message.Text, " "))
+								NewWhitelist := list[1:]
+								AddWhitelist(updateMsg, NewWhitelist)
+							}
+						}
 					case "start":
 						if !updateMsg.Chat.IsPrivate() {
 							return

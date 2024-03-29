@@ -14,6 +14,7 @@ import (
 
 	"github.com/XiaoMengXinX/Music163Api-Go/api"
 	"github.com/XiaoMengXinX/Music163Api-Go/types"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -146,4 +147,54 @@ func getProgramRealID(programID int) int {
 		return programDetail.Program.MainSong.ID
 	}
 	return 0
+}
+
+// 读取白名单列表
+func readWhitelist() ([]int64, error) {
+	data, _ := os.ReadFile("Whitelist")
+	lines := strings.Split(string(data), "\n")
+	var whitelist []int64
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		num, err := strconv.ParseInt(line, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		whitelist = append(whitelist, num)
+	}
+	return whitelist, nil
+}
+
+// 更新白名单列表
+func AddWhitelist(message tgbotapi.Message, whitelist []string) error {
+	data, _ := os.ReadFile("Whitelist")
+	lines := strings.Split(string(data), "\n")
+	NewList := append(lines, whitelist...)
+	NewList = removeDuplicates(NewList)
+	NewData := []byte(strings.Join(NewList, "\n"))
+	os.WriteFile("Whitelist", NewData, 0644)
+
+	newMsg := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf("增加: %s", whitelist))
+	newMsg.ParseMode = tgbotapi.ModeMarkdown
+	newMsg.ReplyToMessageID = message.MessageID
+	message, err := bot.Send(newMsg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func removeDuplicates(arr []string) []string {
+	seen := make(map[string]bool)
+	unique := []string{}
+	for _, val := range arr {
+		if !seen[val] {
+			seen[val] = true
+			unique = append(unique, val)
+		}
+	}
+
+	return unique
 }

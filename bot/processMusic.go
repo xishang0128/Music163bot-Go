@@ -14,7 +14,7 @@ import (
 	"github.com/XiaoMengXinX/Music163Api-Go/api"
 	"github.com/XiaoMengXinX/Music163Api-Go/types"
 	downloader "github.com/XiaoMengXinX/SimpleDownloader"
-	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

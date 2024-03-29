@@ -21,6 +21,7 @@ log
 # vendor/
 /.idea/
 config.ini
+Whitelist
 /Music163bot-Go*
 /src
 /ext
