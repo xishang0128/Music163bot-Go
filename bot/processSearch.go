@@ -2,6 +2,8 @@ package bot
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/XiaoMengXinX/Music163Api-Go/api"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -41,15 +43,36 @@ func processSearch(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) {
 				songArtists = fmt.Sprintf("%s/%s", songArtists, artist.Name)
 			}
 		}
-		inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d", i+1), fmt.Sprintf("music %d", searchResult.Result.Songs[i].Id)))
+		inlineButton = append(inlineButton, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d", i+1), fmt.Sprintf("music %d %d", searchResult.Result.Songs[i].Id, message.MessageID)))
 		textMessage = fmt.Sprintf("%s%d.「%s」 - %s\n", textMessage, i+1, searchResult.Result.Songs[i].Name, songArtists)
 	}
 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(inlineButton)
 	newEditMsg := tgbotapi.NewEditMessageText(message.Chat.ID, msgResult.MessageID, textMessage)
 	newEditMsg.ReplyMarkup = &numericKeyboard
-	message, err = bot.Send(newEditMsg)
-	if err != nil {
-		return err
-	}
+	_, err = bot.Send(newEditMsg)
 	return err
+}
+
+func handleCallbackQuery(update tgbotapi.Update, bot *tgbotapi.BotAPI) error {
+	callbackQuery := update.CallbackQuery
+	if callbackQuery == nil {
+		return nil
+	}
+
+	data := callbackQuery.Data
+
+	if strings.HasPrefix(data, "music ") {
+		args := strings.Split(data, " ")
+		musicID, _ := strconv.Atoi(string(args[1]))
+		replyID, _ := strconv.Atoi(string(args[2]))
+
+		deleteMsg := tgbotapi.NewDeleteMessage(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID)
+		bot.Send(deleteMsg)
+
+		err := processMusic(musicID, replyID, *callbackQuery.Message, bot)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -81,8 +81,8 @@ func processEmptyInline(message tgbotapi.InlineQuery, bot *tgbotapi.BotAPI) (err
 
 func processInlineHelp(message tgbotapi.InlineQuery, bot *tgbotapi.BotAPI) (err error) {
 	randomID := time.Now().UnixMicro()
-	inlineMsg1 := tgbotapi.NewInlineQueryResultArticle(fmt.Sprintf("%d", randomID), "1.粘贴音乐分享URL或输入MusicID", "Music163bot-Go v2")
-	inlineMsg2 := tgbotapi.NewInlineQueryResultArticle(fmt.Sprintf("%d", randomID+1), "2.输入 search+关键词 搜索歌曲", "Music163bot-Go v2")
+	inlineMsg1 := tgbotapi.NewInlineQueryResultArticle(fmt.Sprintf("%d", randomID), "1.粘贴音乐分享 URL 或输入 MusicID", "Music163bot-Go v2")
+	inlineMsg2 := tgbotapi.NewInlineQueryResultArticle(fmt.Sprintf("%d", randomID+1), "2.输入 search+ 关键词 搜索歌曲", "Music163bot-Go v2")
 	inlineConf := tgbotapi.InlineConfig{
 		InlineQueryID: message.ID,
 		IsPersonal:    false,

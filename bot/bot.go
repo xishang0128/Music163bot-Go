@@ -128,7 +128,7 @@ func Start(conf map[string]string) (actionCode int) {
 							if musicID == 0 {
 								return
 							}
-							err := processMusic(musicID, updateMsg, bot)
+							err := processMusic(musicID, 0, updateMsg, bot)
 							if err != nil {
 								logrus.Errorln(err)
 							}
@@ -145,7 +145,7 @@ func Start(conf map[string]string) (actionCode int) {
 							id, _ := strconv.Atoi(updateMsg.CommandArguments())
 							musicID := getProgramRealID(id)
 							if musicID != 0 {
-								err := processMusic(musicID, updateMsg, bot)
+								err := processMusic(musicID, 0, updateMsg, bot)
 								if err != nil {
 									logrus.Errorln(err)
 								}
@@ -207,13 +207,13 @@ func Start(conf map[string]string) (actionCode int) {
 					go func() {
 						id := parseMusicID(updateMsg.Text)
 						if id != 0 {
-							err := processMusic(id, updateMsg, bot)
+							err := processMusic(id, 0, updateMsg, bot)
 							if err != nil {
 								logrus.Errorln(err)
 							}
 						} else if id = parseProgramID(updateMsg.Text); id != 0 {
 							if id = getProgramRealID(id); id != 0 {
-								err := processMusic(id, updateMsg, bot)
+								err := processMusic(id, 0, updateMsg, bot)
 								if err != nil {
 									logrus.Errorln(err)
 								}
@@ -223,20 +223,21 @@ func Start(conf map[string]string) (actionCode int) {
 				}
 			}
 		case update.CallbackQuery != nil:
-			updateQuery := *update.CallbackQuery
-			args := strings.Split(updateQuery.Data, " ")
-			if len(args) < 2 {
-				continue
-			}
-			switch args[0] {
-			case "music":
-				go func() {
-					err := processCallbackMusic(args, updateQuery, bot)
-					if err != nil {
-						logrus.Errorln(err)
-					}
-				}()
-			}
+			handleCallbackQuery(update, bot)
+			// updateQuery := *update.CallbackQuery
+			// args := strings.Split(updateQuery.Data, " ")
+			// if len(args) < 2 {
+			// 	continue
+			// }
+			// switch args[0] {
+			// case "music":
+			// 	go func() {
+			// 		err := processCallbackMusic(args, updateQuery, bot)
+			// 		if err != nil {
+			// 			logrus.Errorln(err)
+			// 		}
+			// 	}()
+			// }
 		case update.InlineQuery != nil:
 			updateQuery := *update.InlineQuery
 			switch {

@@ -91,7 +91,7 @@ func recognizeMusic(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) 
 	msg.ReplyToMessageID = message.ReplyToMessage.MessageID
 	_, _ = bot.Send(msg)
 
-	return processMusic(musicID, *message.ReplyToMessage, bot)
+	return processMusic(musicID, 0, *message.ReplyToMessage, bot)
 }
 
 func uploadFile(url string, file []byte) ([]byte, error) {

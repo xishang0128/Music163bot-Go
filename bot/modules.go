@@ -38,7 +38,7 @@ func processCallbackMusic(args []string, updateQuery tgbotapi.CallbackQuery, bot
 			return err
 		}
 		message := *updateQuery.Message
-		return processMusic(musicID, message, bot)
+		return processMusic(musicID, 0, message, bot)
 	}
 	callback := tgbotapi.NewCallback(updateQuery.ID, callbackText)
 	callback.URL = fmt.Sprintf("t.me/%s?start=%d", botName, musicID)
@@ -82,7 +82,7 @@ func processAnyMusic(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error)
 	}
 	musicID, _ := strconv.Atoi(message.CommandArguments())
 	if musicID != 0 {
-		err = processMusic(musicID, message, bot)
+		err = processMusic(musicID, 0, message, bot)
 		return err
 	}
 	searchResult, _ := api.SearchSong(data, api.SearchSongConfig{
@@ -95,7 +95,7 @@ func processAnyMusic(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error)
 		_, err = bot.Send(msg)
 		return err
 	}
-	err = processMusic(searchResult.Result.Songs[0].Id, message, bot)
+	err = processMusic(searchResult.Result.Songs[0].Id, 0, message, bot)
 	return err
 }
 

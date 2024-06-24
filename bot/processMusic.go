@@ -22,7 +22,7 @@ import (
 // 限制并发任务数
 var musicLimiter = make(chan bool, 4)
 
-func processMusic(musicID int, message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) {
+func processMusic(musicID int, replyID int, message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) {
 	d := downloader.NewDownloader().SetSavePath(cacheDir).SetBreakPoint(true)
 
 	timeout, _ := strconv.Atoi(config["DownloadTimeout"])
@@ -30,6 +30,9 @@ func processMusic(musicID int, message tgbotapi.Message, bot *tgbotapi.BotAPI) (
 		d.SetTimeOut(time.Duration(int64(timeout)) * time.Second)
 	} else {
 		d.SetTimeOut(60 * time.Second) // 默认超时时间为 60 秒
+	}
+	if replyID != 0 {
+		message.MessageID = replyID
 	}
 
 	defer func() {
