@@ -104,7 +104,7 @@ func parseMusicID(text string) []int {
 		if strings.Contains(musicUrl[0], "163cn.tv") {
 			resp, err := client.Get(musicUrl[0])
 			if err != nil {
-				return []int{}
+				return []int{0}
 			}
 			defer resp.Body.Close()
 			musicUrl[0] = resp.Header.Get("Location")
@@ -125,7 +125,7 @@ func parseMusicID(text string) []int {
 			var id int
 			if id, err = strconv.Atoi(strings.Split(url.Path, "/")[2]); err != nil {
 				if id, err = strconv.Atoi(url.Query().Get("id")); err != nil {
-					return []int{}
+					return []int{0}
 				}
 			}
 			return getAlbumToNusicID(id)
@@ -187,14 +187,14 @@ func getProgramRealID(programID int) int {
 func getAlbumToNusicID(albumID int) (musicids []int) {
 	albumDetail, err := api.GetAlbumDetail(data, albumID)
 	if err != nil {
-		return []int{}
+		return []int{0}
 	}
 
 	var state ReduxState
 	err = json.Unmarshal([]byte(albumDetail.RawJson), &state)
 	if err != nil {
 		logrus.Errorf("Error parsing JSON: %s", err)
-		return []int{}
+		return []int{0}
 	}
 
 	for _, song := range state.Songs {
