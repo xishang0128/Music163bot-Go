@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"bufio"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -9,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+	URL "net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -22,15 +21,12 @@ import (
 )
 
 type ReduxState struct {
-	Album struct {
-		Songs []Song `json:"songs"`
-	} `json:"Album"`
+	Songs []Song `json:"songs"`
 }
 
 type Song struct {
-	ID         int64  `json:"id"`
-	SongName   string `json:"songName"`
-	SingerName string `json:"singerName"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 // 判断数组包含关系
@@ -92,8 +88,11 @@ func verifyMD5(filePath string, md5str string) (bool, error) {
 
 // 解析 MusicID
 func parseMusicID(text string) []int {
-	var musicids []int
-	var replacer = strings.NewReplacer("\n", "", " ", "")
+	var (
+		err      error
+		musicids []int
+		replacer = strings.NewReplacer("\n", "", " ", "")
+	)
 	messageText := replacer.Replace(text)
 	musicUrl := regUrl.FindStringSubmatch(messageText)
 	if len(musicUrl) != 0 {
@@ -103,7 +102,6 @@ func parseMusicID(text string) []int {
 			},
 		}
 		if strings.Contains(musicUrl[0], "163cn.tv") {
-
 			resp, err := client.Get(musicUrl[0])
 			if err != nil {
 				return []int{}
@@ -111,10 +109,11 @@ func parseMusicID(text string) []int {
 			defer resp.Body.Close()
 			musicUrl[0] = resp.Header.Get("Location")
 		}
+
 		// 歌曲
 		if strings.Contains(musicUrl[0], "song") {
-			ur, _ := url.Parse(musicUrl[0])
-			id := ur.Query().Get("id")
+			url, _ := URL.Parse(musicUrl[0])
+			id := url.Query().Get("id")
 			if musicid, _ := strconv.Atoi(id); musicid != 0 {
 				return append(musicids, musicid)
 			}
@@ -122,39 +121,14 @@ func parseMusicID(text string) []int {
 
 		// 专辑
 		if strings.Contains(musicUrl[0], "album") {
-			resp, err := client.Get(musicUrl[0])
-			if err != nil {
-				return []int{}
-			}
-			defer resp.Body.Close()
-
-			body, _ := io.ReadAll(resp.Body)
-
-			scanner := bufio.NewScanner(strings.NewReader(string(body)))
-			var reduxState string
-
-			for scanner.Scan() {
-				line := scanner.Text()
-				if strings.Contains(line, "window.REDUX_STATE") {
-					start := strings.Index(line, "=") + 2
-					if start != -1 {
-						reduxState = line[start : len(line)-1]
-						break
-					}
+			url, _ := URL.Parse(musicUrl[0])
+			var id int
+			if id, err = strconv.Atoi(strings.Split(url.Path, "/")[2]); err != nil {
+				if id, err = strconv.Atoi(url.Query().Get("id")); err != nil {
+					return []int{}
 				}
 			}
-
-			var state ReduxState
-			err = json.Unmarshal([]byte(reduxState), &state)
-			if err != nil {
-				logrus.Errorf("Error parsing JSON: %s", err)
-				return []int{}
-			}
-
-			for _, song := range state.Album.Songs {
-				musicids = append(musicids, int(song.ID))
-			}
-			return musicids
+			return getAlbumToNusicID(id)
 		}
 	}
 
@@ -208,6 +182,25 @@ func getProgramRealID(programID int) int {
 		return programDetail.Program.MainSong.ID
 	}
 	return 0
+}
+
+func getAlbumToNusicID(albumID int) (musicids []int) {
+	albumDetail, err := api.GetAlbumDetail(data, albumID)
+	if err != nil {
+		return []int{}
+	}
+
+	var state ReduxState
+	err = json.Unmarshal([]byte(albumDetail.RawJson), &state)
+	if err != nil {
+		logrus.Errorf("Error parsing JSON: %s", err)
+		return []int{}
+	}
+
+	for _, song := range state.Songs {
+		musicids = append(musicids, int(song.ID))
+	}
+	return musicids
 }
 
 // 读取白名单列表
