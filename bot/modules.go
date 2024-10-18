@@ -29,47 +29,49 @@ func printAbout(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) {
 	return err
 }
 
-func processCallbackMusic(args []string, updateQuery tgbotapi.CallbackQuery, bot *tgbotapi.BotAPI) (err error) {
-	musicID, _ := strconv.Atoi(args[1])
-	if updateQuery.Message.Chat.IsPrivate() {
-		callback := tgbotapi.NewCallback(updateQuery.ID, callbackText)
-		_, err = bot.Request(callback)
-		if err != nil {
-			return err
-		}
-		message := *updateQuery.Message
-		return processMusic(musicID, 0, message, bot)
-	}
-	callback := tgbotapi.NewCallback(updateQuery.ID, callbackText)
-	callback.URL = fmt.Sprintf("t.me/%s?start=%d", botName, musicID)
-	_, err = bot.Request(callback)
-	return err
-}
+// func processCallbackMusic(args []string, updateQuery tgbotapi.CallbackQuery, bot *tgbotapi.BotAPI) (err error) {
+// 	musicID, _ := strconv.Atoi(args[1])
+// 	if updateQuery.Message.Chat.IsPrivate() {
+// 		callback := tgbotapi.NewCallback(updateQuery.ID, callbackText)
+// 		_, err = bot.Request(callback)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		message := *updateQuery.Message
+// 		return processMusic(musicID, 0, message, bot)
+// 	}
+// 	callback := tgbotapi.NewCallback(updateQuery.ID, callbackText)
+// 	callback.URL = fmt.Sprintf("t.me/%s?start=%d", botName, musicID)
+// 	_, err = bot.Request(callback)
+// 	return err
+// }
 
 func processRmCache(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) {
-	musicID := parseMusicID(message.CommandArguments())
-	if musicID == 0 {
-		musicID = parseProgramID(message.CommandArguments())
-		if musicID = getProgramRealID(musicID); musicID == 0 {
+	musicids := parseMusicID(message.CommandArguments())
+	for _, musicID := range musicids {
+		if musicID == 0 {
+			musicID = parseProgramID(message.CommandArguments())
+			if musicID = getProgramRealID(musicID); musicID == 0 {
+				return err
+			}
+		}
+		db := MusicDB.Session(&gorm.Session{})
+		var songInfo SongInfo
+		err = db.Where("music_id = ?", musicID).First(&songInfo).Error
+		if !errors.Is(err, logger.ErrRecordNotFound) {
+			db.Where("music_id = ?", musicID).Delete(&songInfo)
+			newMsg := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(rmcacheReport, songInfo.SongName))
+			newMsg.ReplyToMessageID = message.MessageID
+			message, err = bot.Send(newMsg)
+			if err != nil {
+				return err
+			}
 			return err
 		}
-	}
-	db := MusicDB.Session(&gorm.Session{})
-	var songInfo SongInfo
-	err = db.Where("music_id = ?", musicID).First(&songInfo).Error
-	if !errors.Is(err, logger.ErrRecordNotFound) {
-		db.Where("music_id = ?", musicID).Delete(&songInfo)
-		newMsg := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(rmcacheReport, songInfo.SongName))
+		newMsg := tgbotapi.NewMessage(message.Chat.ID, noCache)
 		newMsg.ReplyToMessageID = message.MessageID
 		message, err = bot.Send(newMsg)
-		if err != nil {
-			return err
-		}
-		return err
 	}
-	newMsg := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(noCache))
-	newMsg.ReplyToMessageID = message.MessageID
-	message, err = bot.Send(newMsg)
 	return err
 }
 
@@ -118,7 +120,7 @@ func processStatus(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) {
 	} else if message.Chat.UserName != "" {
 		chatInfo = fmt.Sprintf("[%s](https://t.me/%s)", mdV2Replacer.Replace(message.Chat.Title), message.Chat.UserName)
 	} else {
-		chatInfo = fmt.Sprintf("%s", mdV2Replacer.Replace(message.Chat.Title))
+		chatInfo = mdV2Replacer.Replace(message.Chat.Title)
 	}
 	msgText := fmt.Sprintf(statusInfo, lastRecord.ID, chatInfo, chatCount, message.From.ID, message.From.ID, fromCount)
 	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)

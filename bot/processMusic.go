@@ -354,8 +354,7 @@ func processMusic(musicID int, replyID int, message tgbotapi.Message, bot *tgbot
 }
 
 func sendMusic(songInfo SongInfo, musicPath, picPath string, message tgbotapi.Message, bot *tgbotapi.BotAPI) (audio tgbotapi.Message, err error) {
-	var numericKeyboard tgbotapi.InlineKeyboardMarkup
-	numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+	numericKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL(fmt.Sprintf("%s- %s", songInfo.SongName, songInfo.SongArtists), fmt.Sprintf("https://music.163.com/song?id=%d", songInfo.MusicID)),
 		),
@@ -372,7 +371,7 @@ func sendMusic(songInfo SongInfo, musicPath, picPath string, message tgbotapi.Me
 		_, _ = bot.Send(status)
 	}
 	newAudio.Caption = fmt.Sprintf(musicInfo, songInfo.SongName, songInfo.SongArtists, songInfo.SongAlbum, songInfo.FileExt, float64(songInfo.MusicSize+songInfo.EmbPicSize)/1024/1024, float64(songInfo.BitRate)/1000, botName)
-	newAudio.Title = fmt.Sprintf("%s", songInfo.SongName)
+	newAudio.Title = songInfo.SongName
 	newAudio.Performer = songInfo.SongArtists
 	newAudio.Duration = songInfo.Duration
 	newAudio.ReplyMarkup = numericKeyboard

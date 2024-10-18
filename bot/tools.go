@@ -1,8 +1,11 @@
 package bot
 
 import (
+	"bufio"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +20,18 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )
+
+type ReduxState struct {
+	Album struct {
+		Songs []Song `json:"songs"`
+	} `json:"Album"`
+}
+
+type Song struct {
+	ID         int64  `json:"id"`
+	SongName   string `json:"songName"`
+	SingerName string `json:"singerName"`
+}
 
 // 判断数组包含关系
 func in(target string, strArray []string) bool {
@@ -70,37 +85,83 @@ func verifyMD5(filePath string, md5str string) (bool, error) {
 		return false, err
 	}
 	if hex.EncodeToString(md5hash.Sum(nil)) != md5str {
-		return false, fmt.Errorf(md5VerFailed)
+		return false, errors.New(md5VerFailed)
 	}
 	return true, nil
 }
 
 // 解析 MusicID
-func parseMusicID(text string) int {
+func parseMusicID(text string) []int {
+	var musicids []int
 	var replacer = strings.NewReplacer("\n", "", " ", "")
 	messageText := replacer.Replace(text)
 	musicUrl := regUrl.FindStringSubmatch(messageText)
 	if len(musicUrl) != 0 {
+		client := http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
 		if strings.Contains(musicUrl[0], "163cn.tv") {
-			client := http.Client{
-				CheckRedirect: func(req *http.Request, via []*http.Request) error {
-					return http.ErrUseLastResponse
-				},
+
+			resp, err := client.Get(musicUrl[0])
+			if err != nil {
+				return []int{}
 			}
-			resp, _ := client.Get(musicUrl[0])
 			defer resp.Body.Close()
 			musicUrl[0] = resp.Header.Get("Location")
 		}
+		// 歌曲
 		if strings.Contains(musicUrl[0], "song") {
 			ur, _ := url.Parse(musicUrl[0])
 			id := ur.Query().Get("id")
 			if musicid, _ := strconv.Atoi(id); musicid != 0 {
-				return musicid
+				return append(musicids, musicid)
 			}
 		}
+
+		// 专辑
+		if strings.Contains(musicUrl[0], "album") {
+			resp, err := client.Get(musicUrl[0])
+			if err != nil {
+				return []int{}
+			}
+			defer resp.Body.Close()
+
+			body, _ := io.ReadAll(resp.Body)
+
+			scanner := bufio.NewScanner(strings.NewReader(string(body)))
+			var reduxState string
+
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.Contains(line, "window.REDUX_STATE") {
+					start := strings.Index(line, "=") + 2
+					if start != -1 {
+						reduxState = line[start : len(line)-1]
+						break
+					}
+				}
+			}
+
+			var state ReduxState
+			err = json.Unmarshal([]byte(reduxState), &state)
+			if err != nil {
+				logrus.Errorf("Error parsing JSON: %s", err)
+				return []int{}
+			}
+
+			for _, song := range state.Album.Songs {
+				musicids = append(musicids, int(song.ID))
+			}
+			return musicids
+		}
 	}
-	musicid, _ := strconv.Atoi(linkTestMusic(messageText))
-	return musicid
+
+	if musicID, err := strconv.Atoi(linkTestMusic(messageText)); err == nil {
+		musicids = append(musicids, musicID)
+	}
+	return musicids
 }
 
 // 解析 ProgramID
@@ -130,12 +191,12 @@ func linkTestProgram(text string) string {
 }
 
 // 判断 error 是否为超时错误
-func isTimeout(err error) bool {
-	if strings.Contains(fmt.Sprintf("%v", err), "context deadline exceeded") {
-		return true
-	}
-	return false
-}
+// func isTimeout(err error) bool {
+// 	if strings.Contains(fmt.Sprintf("%v", err), "context deadline exceeded") {
+// 		return true
+// 	}
+// 	return false
+// }
 
 // 获取电台节目的 MusicID
 func getProgramRealID(programID int) int {

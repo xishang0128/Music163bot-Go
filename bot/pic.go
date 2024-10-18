@@ -33,7 +33,7 @@ func resizeImg(filePath string) (string, error) {
 	if err != nil {
 		img, err = png.Decode(bytes.NewReader(buffer))
 		if err != nil {
-			return "", fmt.Errorf("Image decode error  %s", filePath)
+			return "", fmt.Errorf("image decode error  %s", filePath)
 		}
 	}
 	err = file.Close()
@@ -68,7 +68,7 @@ func resizeImg(filePath string) (string, error) {
 
 	out, err := os.Create(filePath + ".resize.jpg")
 	if err != nil {
-		return "", fmt.Errorf("Create image file error  %s", err)
+		return "", fmt.Errorf("create image file error  %s", err)
 	}
 	defer func(out *os.File) {
 		err := out.Close()

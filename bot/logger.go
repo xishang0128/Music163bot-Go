@@ -33,8 +33,7 @@ type LogFormatter struct{}
 
 func (s *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := time.Now().Local().Format("2006/01/02 15:04:05")
-	var msg string
-	msg = fmt.Sprintf("%s [%s] %s (%s:%d)\n", timestamp, strings.ToUpper(entry.Level.String()), entry.Message, path.Base(entry.Caller.File), entry.Caller.Line)
+	msg := fmt.Sprintf("%s [%s] %s (%s:%d)\n", timestamp, strings.ToUpper(entry.Level.String()), entry.Message, path.Base(entry.Caller.File), entry.Caller.Line)
 	return []byte(msg), nil
 }
 
@@ -128,7 +127,6 @@ func (l *dbLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql st
 			l.Printf(l.traceStr, float64(elapsed.Nanoseconds())/1e6, rows, sql)
 		}
 	}
-	return
 }
 
 func (l *dbLogger) LogMode(level logger.LogLevel) logger.Interface {

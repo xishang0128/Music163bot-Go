@@ -69,7 +69,14 @@ func recognizeMusic(message tgbotapi.Message, bot *tgbotapi.BotAPI) (err error) 
 	}
 
 	newFile, err := os.Open(fmt.Sprintf("%s/%s.mp3", cacheDir, fileName))
-	newBuf, _ := io.ReadAll(newFile)
+	if err != nil {
+		return err
+	}
+	defer newFile.Close()
+	newBuf, err := io.ReadAll(newFile)
+	if err != nil {
+		return err
+	}
 
 	resp, err := uploadFile(recognizeAPI, newBuf)
 	if err != nil {
@@ -113,6 +120,9 @@ func uploadFile(url string, file []byte) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	return respBody, nil
 }
 

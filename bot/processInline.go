@@ -16,8 +16,7 @@ func processInlineMusic(musicid int, query tgbotapi.InlineQuery, bot *tgbotapi.B
 	err = db.Where("music_id = ?", musicid).First(&songInfo).Error // 查找是否有缓存数据
 	if err == nil {                                                // 从缓存数据回应 inlineQuery
 		if songInfo.FileID != "" && songInfo.SongName != "" {
-			var numericKeyboard tgbotapi.InlineKeyboardMarkup
-			numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+			numericKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonURL(fmt.Sprintf("%s- %s", songInfo.SongName, songInfo.SongArtists), fmt.Sprintf("https://music.163.com/song?id=%d", songInfo.MusicID)),
 				),

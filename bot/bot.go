@@ -205,17 +205,19 @@ func Start(conf map[string]string) (actionCode int) {
 					}
 				} else if strings.Contains(update.Message.Text, "music.163.com") || strings.Contains(update.Message.Text, "163cn.tv") {
 					go func() {
-						id := parseMusicID(updateMsg.Text)
-						if id != 0 {
-							err := processMusic(id, 0, updateMsg, bot)
-							if err != nil {
-								logrus.Errorln(err)
-							}
-						} else if id = parseProgramID(updateMsg.Text); id != 0 {
-							if id = getProgramRealID(id); id != 0 {
+						ids := parseMusicID(updateMsg.Text)
+						for _, id := range ids {
+							if id != 0 {
 								err := processMusic(id, 0, updateMsg, bot)
 								if err != nil {
 									logrus.Errorln(err)
+								}
+							} else if id = parseProgramID(updateMsg.Text); id != 0 {
+								if id = getProgramRealID(id); id != 0 {
+									err := processMusic(id, 0, updateMsg, bot)
+									if err != nil {
+										logrus.Errorln(err)
+									}
 								}
 							}
 						}

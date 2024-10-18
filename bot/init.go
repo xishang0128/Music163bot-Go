@@ -25,7 +25,7 @@ var botName string
 var cacheDir = "./cache"
 var botAPI = "https://api.telegram.org"
 
-// maxRetryTimes 最大重试次数, downloaderTimeout 下载超时时间
+// maxRetryTimes 最大重试次数，downloaderTimeout 下载超时时间
 var maxRetryTimes, downloaderTimeout int
 
 var (
@@ -39,7 +39,7 @@ var (
 	reg4   = regexp.MustCompile("&(.*)")
 	reg3   = regexp.MustCompile(`\?(.*)`)
 	regInt = regexp.MustCompile(`\d+`)
-	regUrl = regexp.MustCompile("(http|https)://[\\w\\-_]+(\\.[\\w\\-_]+)+([\\w\\-.,@?^=%&:/~+#]*[\\w\\-@?^=%&/~+#])?")
+	regUrl = regexp.MustCompile(`(http|https)://[\w\-_]+(\.[\w\-_]+)+([\w\-.,@?^=%&:/~+#]*[\w\-@?^=%&/~+#])?`)
 )
 
 var mdV2Replacer = strings.NewReplacer(
@@ -71,12 +71,12 @@ via @%s`
 	statusInfo = `*\[统计信息\]*
 数据库中总缓存歌曲数量: %d
 当前对话 \[%s\] 缓存歌曲数量: %d
-当前用户 \[[%d](tg://user?id=%d)\] 缓存歌曲数量: %d
+当前用户 \[[%d](tg://user?id=%d)\] 缓存歌曲数量：%d
 `
 	rmcacheReport    = `清除 [%s] 缓存成功`
 	inputKeyword     = "请输入搜索关键词"
-	inputIDorKeyword = "请输入歌曲ID或歌曲关键词"
-	inputContent     = "请输入歌曲关键词/歌曲分享链接/歌曲ID"
+	inputIDorKeyword = "请输入歌曲 ID 或歌曲关键词"
+	inputContent     = "请输入歌曲关键词/歌曲分享链接/歌曲 ID"
 	searching        = `搜索中...`
 	noResults        = `未找到结果`
 	noCache          = `歌曲未缓存`
@@ -92,13 +92,12 @@ via @%s`
 	downloading      = `下载中...`
 	downloadStatus   = " %s\n%.2fMB/%.2fMB %d%%"
 	redownloading    = `下载失败，尝试重新下载中...`
-	uploading        = `下载完成, 发送中...`
-	md5VerFailed     = "MD5校验失败"
-	reTrying         = "尝试重新下载中 (%d/%d)"
-	retryLater       = "请稍后重试"
+	uploading        = `下载完成，发送中...`
+	md5VerFailed     = "MD5 校验失败"
 
-	reloading    = "重新加载中"
-	callbackText = "Success"
+	retryLater = "请稍后重试"
+
+	reloading = "重新加载中"
 
 	fetchingLyric   = "正在获取歌词中"
 	downloadTimeout = `下载超时`
